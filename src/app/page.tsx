@@ -1,81 +1,22 @@
-// src/app/page.tsx
 "use client";
 
 import { useState } from "react";
-
-const conversations = [
-  {
-    title: "Daily check-in",
-    prompt: "Hi Raul, how was your day today?",
-    suggestion: "My day was good. I worked on my projects and practiced English.",
-  },
-  {
-    title: "Talking about work",
-    prompt: "Can you tell me what you do for work?",
-    suggestion:
-      "I am a frontend developer. I work with React, React Native, TypeScript and Next.js.",
-  },
-  {
-    title: "Talking about hobbies",
-    prompt: "What do you usually do in your free time?",
-    suggestion:
-      "In my free time, I like climbing, walking with my dog Nuria, and building digital projects.",
-  },
-  {
-    title: "Job interview",
-    prompt: "Tell me about your experience with React.",
-    suggestion:
-      "I have over four years of experience working with React and React Native. I have worked on banking applications, design systems, and mobile features.",
-  },
-];
+import { conversations } from "@/data/conversations";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
 export default function Home() {
   const [index, setIndex] = useState(0);
-  const [transcript, setTranscript] = useState("");
-  const [isListening, setIsListening] = useState(false);
+
+  const { speak } = useTextToSpeech();
+
+  const { transcript, isListening, startListening, resetTranscript } =
+    useSpeechRecognition();
 
   const current = conversations[index];
 
-  const speak = (text: string) => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-US";
-    utterance.rate = 0.85;
-    window.speechSynthesis.speak(utterance);
-  };
-
-  const startListening = () => {
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in this browser. Try Chrome.");
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-US";
-    recognition.interimResults = false;
-    recognition.continuous = false;
-
-    recognition.onstart = () => {
-      setIsListening(true);
-      setTranscript("");
-    };
-
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      const text = event.results[0][0].transcript;
-      setTranscript(text);
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    recognition.start();
-  };
-
   const nextConversation = () => {
-    setTranscript("");
+    resetTranscript();
     setIndex((prev) => (prev + 1) % conversations.length);
   };
 
@@ -92,7 +33,9 @@ export default function Home() {
         </div>
 
         <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
-          <p className="text-sm text-neutral-400">{current.title}</p>
+          <p className="text-sm capitalize text-neutral-400">
+            {current.category} · {current.title}
+          </p>
 
           <h2 className="mt-4 text-2xl font-semibold leading-relaxed">
             {current.prompt}
