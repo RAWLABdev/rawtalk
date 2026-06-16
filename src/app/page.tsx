@@ -4,6 +4,7 @@ import { useState } from "react";
 import { conversations } from "@/data/conversations";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { evaluateAnswer } from "@/lib/evaluateAnswer";
 
 export default function Home() {
   const [index, setIndex] = useState(0);
@@ -14,6 +15,10 @@ export default function Home() {
     useSpeechRecognition();
 
   const current = conversations[index];
+  const result = evaluateAnswer(
+  transcript,
+  current.suggestion
+);
 
   const nextConversation = () => {
     resetTranscript();
@@ -67,10 +72,22 @@ export default function Home() {
 
         <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
           <h3 className="font-semibold">You said:</h3>
+          
           <p className="mt-3 min-h-12 text-neutral-300">
             {transcript || "Your spoken answer will appear here."}
           </p>
         </div>
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
+  <h3 className="font-semibold">Score</h3>
+
+  <p className="mt-3 text-3xl font-bold">
+    {result.score}%
+  </p>
+
+  <p className="mt-2 text-neutral-400">
+    {result.feedback}
+  </p>
+</div>
 
         <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
           <h3 className="font-semibold">Suggested answer:</h3>
