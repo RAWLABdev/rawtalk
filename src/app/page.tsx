@@ -1,18 +1,20 @@
 "use client";
 
-import { useState } from "react";
 import { sessions } from "@/data/sessions";
+import { usePracticeProgress } from "@/hooks/usePracticeProgress";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { evaluateAnswer } from "@/lib/evaluateAnswer";
 
 export default function Home() {
-  const [sessionIndex, setSessionIndex] = useState(0);
-  const [conversationIndex, setConversationIndex] = useState(0);
+  const { progress, saveProgress, resetProgress } = usePracticeProgress();
 
   const { speak } = useTextToSpeech();
   const { transcript, isListening, startListening, resetTranscript } =
     useSpeechRecognition();
+
+  const sessionIndex = progress.sessionIndex;
+  const conversationIndex = progress.conversationIndex;
 
   const session = sessions[sessionIndex];
   const current = session.conversations[conversationIndex];
@@ -23,7 +25,11 @@ export default function Home() {
     resetTranscript();
 
     if (conversationIndex < session.conversations.length - 1) {
-      setConversationIndex((prev) => prev + 1);
+      saveProgress({
+        sessionIndex,
+        conversationIndex: conversationIndex + 1,
+      });
+
       return;
     }
 
@@ -34,8 +40,10 @@ export default function Home() {
     resetTranscript();
 
     if (sessionIndex < sessions.length - 1) {
-      setSessionIndex((prev) => prev + 1);
-      setConversationIndex(0);
+      saveProgress({
+        sessionIndex: sessionIndex + 1,
+        conversationIndex: 0,
+      });
     }
   };
 
@@ -43,9 +51,16 @@ export default function Home() {
     resetTranscript();
 
     if (sessionIndex > 0) {
-      setSessionIndex((prev) => prev - 1);
-      setConversationIndex(0);
+      saveProgress({
+        sessionIndex: sessionIndex - 1,
+        conversationIndex: 0,
+      });
     }
+  };
+
+  const handleReset = () => {
+    resetTranscript();
+    resetProgress();
   };
 
   return (
@@ -59,7 +74,8 @@ export default function Home() {
           <div className="mt-4 flex items-center gap-3">
             <button
               onClick={previousSession}
-              className="rounded-lg border border-neutral-700 px-3 py-1"
+              disabled={sessionIndex === 0}
+              className="rounded-lg border border-neutral-700 px-3 py-1 disabled:cursor-not-allowed disabled:opacity-40"
             >
               ←
             </button>
@@ -70,7 +86,8 @@ export default function Home() {
 
             <button
               onClick={nextSession}
-              className="rounded-lg border border-neutral-700 px-3 py-1"
+              disabled={sessionIndex === sessions.length - 1}
+              className="rounded-lg border border-neutral-700 px-3 py-1 disabled:cursor-not-allowed disabled:opacity-40"
             >
               →
             </button>
@@ -83,6 +100,13 @@ export default function Home() {
           <div className="mt-2 text-sm text-neutral-500">
             Question {conversationIndex + 1} of {session.conversations.length}
           </div>
+
+          <button
+            onClick={handleReset}
+            className="mt-4 rounded-lg border border-neutral-800 px-3 py-1 text-sm text-neutral-400"
+          >
+            Reset progress
+          </button>
         </div>
 
         <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
