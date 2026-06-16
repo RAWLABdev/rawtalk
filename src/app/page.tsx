@@ -11,7 +11,7 @@ import { useCoach } from "@/hooks/useCoach";
 import { useConversationCoach } from "@/hooks/useConversationCoach";
 import { evaluateAnswer } from "@/lib/evaluateAnswer";
 
-type Mode = "challenge" | "conversation";
+type Mode = "challenge" | "conversation" | "interview";
 
 export default function Home() {
   const [mode, setMode] = useState<Mode>("challenge");
@@ -33,6 +33,13 @@ export default function Home() {
     resetConversation,
   } = useConversationCoach();
 
+  const [interviewQuestion, setInterviewQuestion] = useState(
+  "Tell me about your frontend experience."
+);
+
+const [interviewFeedback, setInterviewFeedback] = useState("");
+const [interviewLoading, setInterviewLoading] = useState(false);
+
   if (!isReady) {
     return (
       <main className="min-h-screen bg-neutral-950 px-6 py-10 text-white">
@@ -48,7 +55,11 @@ export default function Home() {
   const current = session.conversations[conversationIndex];
 
   const activePrompt =
-    mode === "challenge" ? current.prompt : conversationQuestion;
+  mode === "challenge"
+    ? current.prompt
+    : mode === "conversation"
+      ? conversationQuestion
+      : interviewQuestion;
 
   const result = evaluateAnswer(transcript, current.suggestion);
 
@@ -56,13 +67,49 @@ export default function Home() {
     coachReplies[conversationIndex % coachReplies.length];
 
   const handleAnalyze = () => {
-    if (mode === "challenge") {
-      askCoach(current.prompt, transcript);
-      return;
-    }
+  if (mode === "challenge") {
+    askCoach(current.prompt, transcript);
+    return;
+  }
 
+  if (mode === "conversation") {
     askConversationCoach(transcript);
-  };
+    return;
+  }
+
+  askInterviewCoach();
+};
+
+  const askInterviewCoach = async () => {
+  if (!transcript.trim()) return;
+
+  setInterviewLoading(true);
+
+  try {
+    const response = await fetch("/api/coach", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt: `Act as a Senior Frontend Recruiter. Ask questions about React, React Native, Next.js, architecture, teamwork and production experience. Current interview question: ${interviewQuestion}`,
+        answer: transcript,
+      }),
+    });
+
+    const data = await response.json();
+
+    setInterviewFeedback(data.text);
+
+    const followUpMatch = data.text.match(/Follow[- ]?up.*?:([\s\S]*)/i);
+
+    if (followUpMatch?.[1]) {
+      setInterviewQuestion(followUpMatch[1].trim());
+    }
+  } finally {
+    setInterviewLoading(false);
+  }
+};
 
   const nextConversation = () => {
     resetTranscript();
@@ -159,6 +206,20 @@ export default function Home() {
             >
               Conversation
             </button>
+
+            <button
+  onClick={() => {
+    resetTranscript();
+    setMode("interview");
+  }}
+  className={`rounded-lg px-4 py-2 text-sm font-medium ${
+    mode === "interview"
+      ? "bg-white text-black"
+      : "border border-neutral-700 text-neutral-300"
+  }`}
+>
+  Interview
+</button>
           </div>
 
           {mode === "challenge" && (
@@ -206,7 +267,11 @@ export default function Home() {
 
         <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="mb-3 text-sm uppercase tracking-[0.2em] text-neutral-500">
-            {mode === "challenge" ? "Daily Challenge" : "Free Conversation"}
+            {mode === "challenge"
+  ? "Daily Challenge"
+  : mode === "conversation"
+    ? "Free Conversation"
+    : "Frontend Interview"}
           </p>
 
           <h2 className="text-2xl font-semibold leading-relaxed">
@@ -237,7 +302,7 @@ export default function Home() {
               }
               className="rounded-xl bg-blue-500 px-4 py-2 font-medium text-white disabled:opacity-40"
             >
-              {loading || conversationLoading
+              {loading || conversationLoading || interviewLoading
                 ? "Analyzing..."
                 : "Analyze with Coach"}
             </button>
@@ -313,6 +378,23 @@ export default function Home() {
             </button>
           </div>
         )}
+
+        {mode === "interview" && interviewFeedback && (
+  <div className="rounded-2xl border border-purple-900 bg-purple-950/30 p-6">
+    <h3 className="font-semibold">Interview Coach</h3>
+
+    <div className="mt-3 whitespace-pre-wrap text-neutral-300">
+      {interviewFeedback}
+    </div>
+
+    <button
+      onClick={() => speak(interviewFeedback)}
+      className="mt-5 rounded-xl bg-purple-500 px-4 py-2 font-medium text-white"
+    >
+      Listen to Interview Coach
+    </button>
+  </div>
+)}
 
         {mode === "challenge" && (
           <>
