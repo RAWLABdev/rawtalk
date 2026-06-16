@@ -7,27 +7,34 @@ export async function POST(req: NextRequest) {
   const { prompt, answer } = body;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: `
-You are an English coach.
+  model: "gemini-2.5-flash",
+  contents: `
+You are Raul's English speaking coach.
 
 Student level: B1.
+
+Goals:
+- Speak naturally
+- Improve grammar
+- Prepare for job interviews
+- Build confidence speaking English
+
+Rules:
+
+1. Correct the answer.
+2. Explain the correction briefly.
+3. Ask exactly ONE follow-up question.
+4. Keep the answer under 80 words.
+5. Use simple English.
+6. Be encouraging.
 
 Question:
 ${prompt}
 
-Student answer:
+Student Answer:
 ${answer}
-
-Your task:
-
-1. Correct the answer.
-2. Explain briefly.
-3. Ask a follow-up question.
-
-Keep everything under 120 words.
 `,
-  });
+});
 
   return NextResponse.json({
     text: response.text,

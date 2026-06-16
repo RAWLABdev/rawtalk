@@ -10,6 +10,8 @@ export function useCoach() {
     prompt: string,
     answer: string
   ) => {
+    if (!answer.trim()) return;
+
     setLoading(true);
 
     try {
@@ -27,6 +29,23 @@ export function useCoach() {
       const data = await response.json();
 
       setFeedback(data.text);
+
+      if ("speechSynthesis" in window) {
+        const utterance =
+          new SpeechSynthesisUtterance(
+            data.text
+          );
+
+        utterance.lang = "en-US";
+        utterance.rate = 0.9;
+
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(
+          utterance
+        );
+      }
+    } catch (error) {
+      console.error(error);
     } finally {
       setLoading(false);
     }
